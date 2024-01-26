@@ -12,18 +12,18 @@ function _M.serialize(ngx, kong)
   if not kong then
     kong = gkong
   end
-  
+
   -- Handles Nil Users
   local ConsumerUsername
   if ctx.authenticated_consumer ~= nil then
     ConsumerUsername = ctx.authenticated_consumer.username
   end
-    
+
   local PathOnly
   if var.request_uri ~= nil then
       PathOnly = string.gsub(var.request_uri,"%?.*","")
   end
-    
+
   local UpstreamPathOnly
   if var.upstream_uri ~= nil then
       UpstreamPathOnly = string.gsub(var.upstream_uri,"%?.*","")
@@ -31,9 +31,7 @@ function _M.serialize(ngx, kong)
 
   local RouteUrl = ""
   if ctx.balancer_data ~= nil then
-      if var.upstream_host ~= nil and var.upstream_host ~= '' then
-        RouteUrl = var.upstream_host
-      elseif ctx.balancer_data.host ~= nil then
+      if ctx.balancer_data.host ~= nil then
         RouteUrl = ctx.balancer_data.host
       end
 
@@ -75,9 +73,10 @@ function _M.serialize(ngx, kong)
       source = var.hostname,
       sourcetype = "AccessLog",
       time = req.start_time(), -- Contains the UTC timestamp of when the request has started to be processed. No rounding like StartedAt + lacks ctx.KONG_PROCESSING_START as possible return(look for discrepancies maybe sometime?).
-      event = {   
+      event = {
           CID = kong.request.get_header("optum-cid-ext"),
           FrontDoorRef = req.get_headers()["X-Azure-Ref"],
+          IngressTransId = req.get_headers()["X-Appgw-Trace-Id"],
           HTTPMethod = kong.request.get_method(),
           RequestSize = var.request_length,
           RoutingURL = RouteUrl,
