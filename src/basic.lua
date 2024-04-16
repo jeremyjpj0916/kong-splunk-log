@@ -1,7 +1,9 @@
 local tablex = require "pl.tablex"
 local _M = {}
 local EMPTY = tablex.readonly({})
-local splunkHost= os.getenv("SPLUNK_HOST")
+local splunkHost = os.getenv("SPLUNK_HOST")
+local kongCSP = os.getenv("KONG_CSP")
+local kongRegion = os.getenv("KONG_REGION")
 local gkong = kong
 
 function _M.serialize(ngx, kong)
@@ -31,7 +33,9 @@ function _M.serialize(ngx, kong)
 
   local RouteUrl = ""
   if ctx.balancer_data ~= nil then
-      if ctx.balancer_data.host ~= nil then
+      if var.upstream_host ~= nil and var.upstream_host ~= '' then
+        RouteUrl = var.upstream_host
+      elseif ctx.balancer_data.host ~= nil then
         RouteUrl = ctx.balancer_data.host
       end
 
@@ -68,6 +72,11 @@ function _M.serialize(ngx, kong)
     end
   end
 
+
+
+local kongCSP=os.getenv("KONG_CSP")
+local kongRegion=os.getenv("KONG_REGION")
+  
   return {
       host = splunkHost,
       source = var.hostname,
@@ -77,6 +86,8 @@ function _M.serialize(ngx, kong)
           CID = kong.request.get_header("optum-cid-ext"),
           FrontDoorRef = req.get_headers()["X-Azure-Ref"],
           IngressTransId = req.get_headers()["X-Appgw-Trace-Id"],
+          CSP = kongCSP,
+          CSPRegion=kongRegion,
           HTTPMethod = kong.request.get_method(),
           RequestSize = var.request_length,
           RoutingURL = RouteUrl,
